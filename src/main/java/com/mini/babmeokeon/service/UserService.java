@@ -53,7 +53,7 @@ public class UserService {
             return new ResponseDto<>(false, "알수 없는 에러 " + e.getMessage());
         }
 
-        return new ResponseDto<>(true, "회원가입 성공");
+        return new ResponseDto<>(true, "회원가입 성공 cicd 되냐 ?");
     }
 
     public ResponseDto<Object> checkId(String username) {
