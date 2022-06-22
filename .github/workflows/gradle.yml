@@ -1,0 +1,52 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-gradle
+name: deploy
+
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+        shell: bash
+
+      - name: Build with Gradle
+        run: ./gradlew build
+        shell: bash
+
+      # 추가
+      - name: Make zip file #1
+        run: zip -qq -r ./$GITHUB_SHA.zip .
+        shell: bash
+
+      - name: Configure AWS credentials #2
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.ACCESS_KEY_SECRET }}
+          aws-region: ap-northeast-2
+
+      - name: Upload to S3 #3
+        run: aws s3 cp --region ap-northeast-2 ./$GITHUB_SHA.zip s3://sparta/$GITHUB_SHA.zip
+
+      - name: Code Deploy #4
+        run: aws deploy create-deployment --application-name bab
+          --deployment-config-name CodeDeployDefault.OneAtATime
+          --deployment-group-name bab
+          --s3-location bucket=sparta,bundleType=zip,key=$GITHUB_SHA.zip
